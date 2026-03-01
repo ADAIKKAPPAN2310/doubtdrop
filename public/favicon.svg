@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="DoubtDrop icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="drop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#bg)"/>
+  <path d="M32 17c-8 8-12 14-12 20a12 12 0 0 0 24 0c0-6-4-12-12-20z" fill="url(#drop)"/>
+  <path d="M26 41c1.2 2.4 3.3 3.8 6 3.8" stroke="#dcfce7" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M22 20v24h5c7.8 0 13-4.8 13-12s-5.2-12-13-12h-5zm5 5h.8c4.6 0 7.3 2.6 7.3 7s-2.7 7-7.3 7H27V25z" fill="#ffffff"/>
+</svg>
