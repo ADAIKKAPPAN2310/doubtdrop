@@ -44,21 +44,18 @@ function isValidUrl(url) {
 }
 
 function App() {
-  const [data, setData] = useState(EMPTY_DATA)
+  const [data, setData] = useState(() => parseStoredData(localStorage.getItem(STORAGE_KEY)))
   const [currentView, setCurrentView] = useState('questions')
-  const [selectedQuestionId, setSelectedQuestionId] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [notification, setNotification] = useState('')
-
-  useEffect(() => {
+  const [selectedQuestionId, setSelectedQuestionId] = useState(() => {
     const savedData = parseStoredData(localStorage.getItem(STORAGE_KEY))
-    setData(savedData)
-
     if (savedData.questions.length > 0) {
       const latestQuestion = sortLatestFirst(savedData.questions)[0]
-      setSelectedQuestionId(latestQuestion.id)
+      return latestQuestion.id
     }
-  }, [])
+    return null
+  })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [notification, setNotification] = useState('')
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
