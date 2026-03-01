@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import AddQuestionForm from './components/AddQuestionForm'
 import QuestionDetail from './components/QuestionDetail'
@@ -12,6 +12,31 @@ const EMPTY_DATA = {
   resources: [],
 }
 
+function normalizeResource(resource) {
+  const resourceId = resource?.id ? String(resource.id) : String(Date.now())
+  const resourceTitle = typeof resource?.title === 'string' ? resource.title : ''
+  const resourceType = resource?.type === 'file' ? 'file' : 'link'
+
+  if (resourceType === 'file') {
+    return {
+      id: resourceId,
+      title: resourceTitle,
+      type: 'file',
+      fileData: typeof resource?.fileData === 'string' ? resource.fileData : '',
+      fileName: typeof resource?.fileName === 'string' ? resource.fileName : '',
+      fileType: typeof resource?.fileType === 'string' ? resource.fileType : '',
+      fileSize: typeof resource?.fileSize === 'number' ? resource.fileSize : 0,
+    }
+  }
+
+  return {
+    id: resourceId,
+    title: resourceTitle,
+    type: 'link',
+    link: typeof resource?.link === 'string' ? resource.link : '',
+  }
+}
+
 function parseStoredData(rawValue) {
   if (!rawValue) {
     return EMPTY_DATA
@@ -19,9 +44,24 @@ function parseStoredData(rawValue) {
 
   try {
     const parsed = JSON.parse(rawValue)
+    const parsedResources = Array.isArray(parsed.resources)
+      ? parsed.resources.map((resource) => {
+          if (resource && typeof resource === 'object' && (resource.type === 'link' || resource.type === 'file')) {
+            return normalizeResource(resource)
+          }
+
+          return normalizeResource({
+            id: resource?.id,
+            title: resource?.title,
+            type: 'link',
+            link: resource?.link,
+          })
+        })
+      : []
+
     return {
       questions: Array.isArray(parsed.questions) ? parsed.questions : [],
-      resources: Array.isArray(parsed.resources) ? parsed.resources : [],
+      resources: parsedResources,
     }
   } catch {
     return EMPTY_DATA
@@ -56,9 +96,16 @@ function App() {
   })
   const [searchQuery, setSearchQuery] = useState('')
   const [notification, setNotification] = useState('')
+  const storageErrorRef = useRef(false)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+      storageErrorRef.current = false
+    } catch {
+      storageErrorRef.current = true
+      setNotification('Storage limit reached. Please remove large files and try again.')
+    }
   }, [data])
 
   useEffect(() => {
@@ -182,24 +229,87 @@ function App() {
     }))
   }
 
-  const handleAddResource = ({ title, link }) => {
-    const cleanedTitle = title.trim()
-    const cleanedLink = link.trim()
+  const handleDownvoteAnswer = (questionId, answerId) => {
+    setData((previousData) => ({
+      ...previousData,
+      questions: previousData.questions.map((question) => {
+        if (question.id !== questionId) {
+          return question
+        }
 
-    if (!cleanedTitle || !cleanedLink) {
-      setNotification('Resource title and link are required.')
+        return {
+          ...question,
+          answers: question.answers.map((answer) => {
+            if (answer.id !== answerId) {
+              return answer
+            }
+
+            return {
+              ...answer,
+              votes: answer.votes - 1,
+            }
+          }),
+        }
+      }),
+    }))
+  }
+
+  const handleAddResource = (resourceInput) => {
+    const { title, type } = resourceInput
+    const cleanedTitle = title.trim()
+
+    if (!cleanedTitle) {
+      setNotification('Resource title is required.')
       return false
     }
 
-    if (!isValidUrl(cleanedLink)) {
-      setNotification('Please provide a valid URL (http/https).')
+    if (type === 'link') {
+      const cleanedLink = resourceInput.link.trim()
+
+      if (!cleanedLink) {
+        setNotification('Resource URL is required.')
+        return false
+      }
+
+      if (!isValidUrl(cleanedLink)) {
+        setNotification('Please provide a valid URL (http/https).')
+        return false
+      }
+
+      const newResource = {
+        id: String(Date.now()),
+        title: cleanedTitle,
+        type: 'link',
+        link: cleanedLink,
+      }
+
+      setData((previousData) => ({
+        ...previousData,
+        resources: [newResource, ...previousData.resources],
+      }))
+
+      setNotification('Resource added successfully.')
+      return true
+    }
+
+    if (type !== 'file') {
+      setNotification('Invalid resource type.')
+      return false
+    }
+
+    if (!resourceInput.fileData || !resourceInput.fileName || !resourceInput.fileType) {
+      setNotification('Please select a valid file to upload.')
       return false
     }
 
     const newResource = {
       id: String(Date.now()),
       title: cleanedTitle,
-      link: cleanedLink,
+      type: 'file',
+      fileData: resourceInput.fileData,
+      fileName: resourceInput.fileName,
+      fileType: resourceInput.fileType,
+      fileSize: typeof resourceInput.fileSize === 'number' ? resourceInput.fileSize : 0,
     }
 
     setData((previousData) => ({
@@ -264,6 +374,7 @@ function App() {
             onBackToQuestions={() => setCurrentView('questions')}
             onAddAnswer={handleAddAnswer}
             onUpvoteAnswer={handleUpvoteAnswer}
+            onDownvoteAnswer={handleDownvoteAnswer}
           />
         ) : null}
 

@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import AddAnswerForm from './AddAnswerForm'
 import AnswerCard from './AnswerCard'
 
-function QuestionDetail({ question, onBackToQuestions, onAddAnswer, onUpvoteAnswer }) {
+function QuestionDetail({ question, onBackToQuestions, onAddAnswer, onUpvoteAnswer, onDownvoteAnswer }) {
   const sortedAnswers = useMemo(() => {
     if (!question) {
       return []
@@ -48,6 +48,7 @@ function QuestionDetail({ question, onBackToQuestions, onAddAnswer, onUpvoteAnsw
                 key={answer.id}
                 answer={answer}
                 onUpvote={() => onUpvoteAnswer(question.id, answer.id)}
+                onDownvote={() => onDownvoteAnswer(question.id, answer.id)}
               />
             ))
           )}
